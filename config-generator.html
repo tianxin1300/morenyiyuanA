@@ -75,6 +75,7 @@ if((S.icp||'').trim()&&!/^[\u4e00-\u9fa5]{1,2}ICP备\d{6,10}号(-\d{1,3})?$/.tes
 if((S.gaba||'').trim()&&!/^[\u4e00-\u9fa5]{1,2}公网安备 ?\d{12,14}号$/.test(S.gaba.trim()))er.push('公安备案号格式不对，应类似 沪公网安备 31010402001234号');
 if(S.book.url.trim()&&!/^https:\/\/[^\s"'<>]+$/.test(S.book.url.trim()))er.push('预约链接必须是 https 开头');
 if(S.tel.num.trim()&&!/^[0-9+\-() ]{5,20}$/.test(S.tel.num.trim()))er.push('电话号码格式不对');
+{const seen={};(o.act||[]).forEach(a=>{if(seen[a.id])er.push('活动编号重复：'+a.id+'，请删除重复的活动或改名');seen[a.id]=1})}
 (o.act||[]).forEach(a=>{const w=a.items.filter(x=>!x.n).length;if(a.items.length<2)er.push('活动“'+a.t+'”至少要有 2 个奖项');if(a.per!=='free'&&!a.pin)er.push('活动“'+a.t+'”没有设置核销密码（4–6 位数字），现场任何人都能点核销');if(!w)er.push('活动“'+a.t+'”没有任何实际服务奖项')});
 if(S.dept.length>3)er.push('已勾选 '+S.dept.length+' 个科室，基础版最多 3 个（升级版不限，请确认套餐）');
 return er}
