@@ -283,7 +283,7 @@ details.fl{margin-top:10px}details.fl>summary{list-style:none;cursor:pointer;min
 </style></head><body><main id="app"></main><footer id="icp" hidden></footer>
 <script>const COL = { tumor: '#7c3a8c', breast: '#be3a6e', lymphoma: '#6d3a8c', myeloma: '#8a3a6d', leukemia: '#a3304f', auto: '#2f7d6d', ckd: '#3a6ea5', colorectal: '#8b5a2b', lung: '#4a5d7e', hyper: '#2D6B8F', diabetes: '#1d5fb8', cardio: '#a83f3f', thyroid: '#8a6d1d', gout: '#5a6b2f', rare: '#0f766e', other: '#5d6b73' };
 const T = [{ k: 'type', l: '类型', o: ['手术', '化疗', '免疫', '靶向', '内分泌治疗', '放疗', '其他'] }];
-const TGT = { k: 'targets', t: 'list', l: '自定义指标目标', add: '添加指标', cols: [{ k: 'name', l: '指标名称', ph: '如 体重' }, { k: 'val', l: '目标值', ph: '如 ≤65 kg' }] };
+const TGT = { k: 'targets', t: 'list', l: '想长期关注的指标（可不填）', add: '添加指标', cols: [{ k: 'name', l: '指标名称', ph: '如 体重' }, { k: 'val', l: '目标值', ph: '如 ≤65 kg' }] };
 const BASE = [{ k: 'diag', t: 'date', l: '诊断时间' }, { k: 'hosp', t: 'text', l: '就诊医院' }, { k: 'dept', t: 'text', l: '主治科室' }];
 const D = {
     tumor: { n: '肿瘤', d: '乳腺癌、结直肠癌、肺癌、淋巴瘤、白血病等，含病理、分期、治疗方案', f: [...BASE, { k: 'path', t: 'area', l: '病理结论' }, { k: 'stage', t: 'text', l: '分期', ph: '如 T2N1M0 / III期' }, { k: 'tx', t: 'multi', l: '治疗方案', o: ['手术', '化疗', '免疫', '靶向'] }, TGT] },
@@ -326,7 +326,7 @@ const ALG = { k: 'allergy', t: 'area', l: '过敏史 / 药物不良反应', ph: 
 const HIS = { k: 'hist0', t: 'area', l: '合并症 / 既往病史 / 做过的手术', ph: '如 高血压10年、糖尿病、2019年胆囊切除；没有就写“无”' };
 const FLG = { k: 'flags', t: 'multi', l: '需要医生知道的情况', o: ['正在用抗凝药或抗血小板药', '体内有支架、起搏器或金属植入物', '怀孕或哺乳期', '心脏功能不好', '肾功能不好或在透析', '有出血或手术后伤口未愈'] };
 Object.keys(D).forEach(k => { const f = D[k].f; if (f.some(x => x.k === 'allergy')) return; f.splice(Math.min(3, f.length), 0, ALG, FLG, HIS); });
-let S = { profiles: [], cur: null, view: 'list', draft: {}, tab: "info", range: "all", q: "", kf: "", edit: null, mxe: null }, mem = null;
+let S = { sbr: true, profiles: [], cur: null, view: 'list', draft: {}, tab: "info", range: "all", q: "", kf: "", edit: null, mxe: null }, mem = null;
 let LOCK = 0, BADOK = false, DIRTY = 0;
 function load() {
     try {
@@ -444,14 +444,14 @@ function view() {
     RD = today();
     const a = document.getElementById('app');
     if (CFG_ERR) { a.innerHTML = '<div class="card"><h2>医院入口暂时无法打开</h2><p class="sub">没有读取到这家医院的配置（入口代号：' + esc(HP_KEY) + '）。请核对链接是否完整，或联系医院服务台获取新的链接。您的个人资料没有受影响。</p></div>'; return; }
-    let h = `<h1>${lgImg(30)}就医伴侣${HP ? '<small style="font-size:14px;color:var(--mute);font-weight:400"> · ' + esc(HP.n) + '</small>' : ''}</h1>` + banners() ;
+    let h = `<h1>${lgImg(30)}就医伴侣${HP ? '<small style="font-size:14px;color:var(--mute);font-weight:400"> · ' + esc(HP.n) + '</small>' : ''}</h1>` + '<p class="note" style="margin:0 0 12px;line-height:1.55"><b>本工具用于患者个人整理就诊资料，不是医院电子病历系统。</b><br>患者自行填写的资料不会自动发送给医院或医生。</p>' + banners() ;
     if (S.view === 'bk')
         h += backBar() + bkView();
     else if (S.view === 'home' && S.profiles.length)
         h += homeView();
     else if (S.view === 'new') {
         const d = S.draft;
-        h += backBar() + `<div class="card"><h2>新建档案</h2><label>成员称呼</label><input id="mn" placeholder="如 妈妈、小宇、我自己" value="${esc(d.member || '')}">
+        h += backBar() + `<div class="card"><h2>新建档案</h2><label>成员称呼（必填）</label><input id="mn" placeholder="如 妈妈、小宇、我自己" value="${esc(d.member || '')}">
 <label>下次复诊日期（可不填，之后也能补充）</label><input id="nvd_new" type="date" value="${esc(d.nvd || '')}">${(() => { const ks = Object.keys(D).filter(k => !TM[k]), dp = ks.filter(k => D[k].dept && deptOk(k)), ds = ks.filter(k => !D[k].dept && disOk(k)); const btn = k => `<button class="opt" style="--c:${COL[k]}" aria-pressed="${d.disease === k}" data-act="dis" data-d="${k}">${D[k].n}<small>${D[k].d}</small></button>`;
         const GRP = [['肿瘤与血液', ['tumor']], ['心血管与代谢', ['hyper', 'diabetes', 'cardio', 'thyroid', 'gout']], ['肾病与免疫', ['ckd', 'auto']], ['罕见病', ['rare']]], used = [];
         let dsHtml = GRP.map(g => { const L = g[1].filter(k => ds.includes(k)); L.forEach(k => used.push(k)); return L.length ? '<h3 class="pk-g">' + g[0] + '</h3><div class="opts">' + L.map(btn).join('') + '</div>' : ''; }).join('');
@@ -460,14 +460,14 @@ function view() {
         return (selDept || selDis ? '<p class="sub" style="margin:10px 0 0">已选择：<b>' + esc(D[d.disease].n) + '</b></p>' : '') + (dp.length ? '<details class="pk-dp"' + (selDis ? '' : ' open') + '><summary><b>选择就诊科室</b> <span class="sub">· ' + dp.length + ' 个科室，先选科室最简单</span></summary><div class="opts">' + dp.map(btn).join('') + '</div></details>' : '') + (ds.length ? '<details class="pk-dis"' + ((S.disOpen || selDis || !dp.length) ? ' open' : '') + '><summary><b>' + (dp.length ? '或选择专科病种' : '选择病种') + '</b> <span class="sub">· ' + ds.length + ' 种，已有明确诊断时再用</span></summary>' + dsHtml + '</details>' : ''); })()}
 ${d.disease === 'other' ? `<label>疾病名称（必填）</label><input id="oname_new" maxlength="40" placeholder="按医生所告知填写，如 哮喘、肝病" value="${esc(d.oname || '')}">` : ''}
 ${d.disease === 'tumor' ? `<label>肿瘤类型</label><div style="display:flex;flex-wrap:wrap;gap:8px">${SUBS.map(s => `<button class="chip" aria-pressed="${d.sub === s}" data-act="sub" data-s="${s}">${s}</button>`).join('')}</div>` : ''}${d.disease === 'rare' ? `<label>患者类型</label><div class="checks"><label><input type="radio" name="ag" value="child" ${d.age === 'child' ? 'checked' : ''}>儿童</label><label><input type="radio" name="ag" value="adult" ${d.age === 'adult' ? 'checked' : ''}>成人</label></div>` : ''}
-<div class="bar"><button class="ghost" data-act="cancel">取消</button><button class="btn" data-act="create">创建档案</button></div></div>`;
+<p class="sub">这里只是个人备忘，不会替您挂号、预约或通知医院。</p><div class="bar"><button class="ghost" data-act="cancel">取消</button><button class="btn" data-act="create">创建档案</button></div></div>`;
     }
     else {
         const p = cur();
         if (!p)
-            h += hospCard() + actCard() + posCard() + `<div class="card empty"><h2>还没有档案</h2><p class="sub">选一个病种，建立第一份档案。</p><button class="btn" data-act="new">新建档案</button> <button class="ghost" data-act="demo">查看示例</button> <button class="ghost" data-act="bk">从备份恢复</button>${HP ? '' : ' <button class="ghost" data-act="prevhosp">预览医院版（演示）</button>'}</div>` + hubData();
+            h += `<div class="card empty"><h2>还没有档案</h2><p class="sub">选一个病种，建立第一份档案。</p><button class="btn" data-act="new">新建档案</button> <button class="ghost" data-act="demo">查看示例</button> <button class="ghost" data-act="bk">从备份恢复</button>${HP ? '' : ' <button class="ghost" data-act="prevhosp">预览医院版（演示）</button>'}</div>` + hospCard() + jnyCard() + actCard() + posCard() + hubData();
         else
-            h += `<div class="pnav" style="--c:${COL[p.disease]}"><div class="phd"><button class="back" data-act="home" aria-label="返回全部档案">‹ 返回</button><b class="pname">${esc(label(p))}</b></div>` + tabs() + `</div>` + (S.tab === "tl" ? tlView(p) : S.tab === "mx" ? mxView(p) : S.tab === "sm" ? smView(p) : visitFlowCard(p, flowVisit(p)) + `<div class="card hd" style="--c:${COL[p.disease]}"><h2>${esc(label(p))}</h2><label>下次复诊日期（可不填）</label><div class="row"><input type="date" data-k="nvd" value="${esc(p.data.nvd || '')}" aria-label="下次复诊日期"><button class="ghost" data-act="tics" data-pid="${p.id}" data-v="1">下载日历提醒文件</button></div><p class="sub">填了日期，复诊前 7 天首页会提醒，并带你去准备清单和摘要。</p><label>成员称呼</label><input data-mem="1" value="${esc(p.member)}">${secs(p)}${medsView(p)}<div class="bar"><span class="saved" id="sv">修改会自动保存在本机</span>${more('<button class="ghost del" data-act="del">删除档案</button>')}</div></div>`);
+            h += `<div class="pnav" style="--c:${COL[p.disease]}"><div class="phd"><button class="back" data-act="home" aria-label="返回全部档案">‹ 返回</button><b class="pname">${esc(label(p))}</b></div>` + tabs() + `</div>` + (S.tab === "tl" ? tlView(p) : S.tab === "mx" ? mxView(p) : S.tab === "sm" ? smView(p) : visitFlowCard(p, flowVisit(p)) + `<div class="card hd" style="--c:${COL[p.disease]}"><h2>档案信息</h2><label>下次复诊日期（可不填）</label><div class="row"><input type="date" data-k="nvd" value="${esc(p.data.nvd || '')}" aria-label="下次复诊日期"><button class="ghost" data-act="tics" data-pid="${p.id}" data-v="1">下载日历提醒文件</button></div><p class="sub">填了日期，复诊前 7 天首页会提醒，并带你去准备清单和摘要。</p><label>成员称呼</label><input data-mem="1" value="${esc(p.member)}">${secs(p)}${medsView(p)}<div class="bar"><span class="saved" id="sv">修改会自动保存在本机</span>${more('<button class="ghost del" data-act="del">删除档案</button>')}</div></div>`);
     }
     h += foot();
     a.innerHTML = h;
@@ -494,7 +494,7 @@ const iget = async (k) => { const d = await idb(); return new Promise((s, j) => 
 const idel = k => idb().then(d => d.transaction('i', 'readwrite').objectStore('i').delete(k)).catch(() => { });
 const idelw = async (k) => { const d = await idb(); return new Promise((s, j) => { const t = d.transaction('i', 'readwrite'); t.objectStore('i').delete(k); t.oncomplete = s; t.onerror = () => j(t.error); t.onabort = () => j(t.error); }); };
 const tabs = () => `<nav class="tabs" aria-label="档案栏目">${[['info', '档案', '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM8.5 11h7M8.5 15h5"/></svg>'], ['tl', '时间线', '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>'], ['mx', '指标', '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="M7 15l4-4 3 3 5-6"/></svg>'], ['sm', '复诊摘要', '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>']].map(t => `<button class="tab" aria-pressed="${S.tab === t[0]}" data-act="tab" data-t="${t[0]}"><span class="ti" aria-hidden="true">${t[2]}</span><span class="tl">${t[1]}</span></button>`).join('')}</nav>`;
-const APP_VER = '2026.10.22';
+const APP_VER = '2026.10.26';
 const foot = () => `<div class="foot2"><details><summary><svg class="ic il" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/></svg>紧急情况请拨 <b>120</b> · 免责声明</summary><p>身体出现紧急情况，请立即就医或拨打急救电话（国内 120）。本工具不是医疗设备，不能替代医生面诊。</p><p>所有数值与资料均为用户自行录入，仅作就诊参考，不能用于诊断。</p><p>本工具不属于医疗器械；资料仅供复诊、多学科会诊给医师参考，不可自行调整治疗方案。</p><p><button class="ghost" data-act="priv">查看隐私说明</button> <button class="ghost" data-act="notice">打印用户须知</button></p><p class="sub">版本 ${APP_VER}${HP ? ' · ' + esc(HP.n) : ''}。医院更新页面后，重新打开原链接即可用上新版，已有资料不受影响；如果还是旧样子，请关闭页面后再打开。</p></details></div>`;
 function afterRender() { document.querySelectorAll('img[data-img]').forEach(async (i) => { try {
     const b = await iget(i.dataset.img);
@@ -795,6 +795,7 @@ function smData(p, rgo) {
         sec.length = 0; ns.forEach(x => sec.push(x));
         meta += ' · 一页精简版';
     }
+    meta += ' · 以下内容由患者自行录入，未经医院核验';
     return { title, meta, note, sec, tl, md: '# ' + title + '\n> ' + meta + '\n\n' + sec.map(x => '## ' + x.h + '\n' + x.lines.map(l => '- ' + l).join('\n')).join('\n\n') + '\n\n> ' + note };
 }
 const CKT = { op: ['门诊', ['身份证', '医保卡 / 就诊卡', '既往病历和出院小结', '近期检查和化验单', '影像报告或片子', '正在用的药物清单（含剂量）', '复诊摘要（打印或手机里）', '这次想问医生的问题', '笔和本子', '手机和充电宝']], in: ['住院', ['身份证', '医保卡', '入院通知或住院证', '既往病历和出院小结', '检查单和影像资料', '正在用的药物清单（含剂量）', '洗漱用品', '换洗衣物和拖鞋', '水杯和餐具', '手机、充电器和充电宝', '家属联系方式']], re: ['复查', ['身份证', '医保卡 / 就诊卡', '复查预约单', '上次复诊记录', '上次检查结果', '正在用的药物清单（含剂量）', '确认医院通知的检查前准备要求', '这次想问医生的问题', '复诊摘要（打印或手机里）']] };
@@ -1010,7 +1011,7 @@ function visitFlowCard(p, nv) {
     const status = visitDone ? '用户确认已完成' : summaryDone ? '等待复诊' : calendarDone ? '日历文件已下载' : prepared ? '准备中' : '已设置日期';
     const step = (n, title, desc, done, action, label) => `<div class="flow-step${done ? ' flow-done' : ''}"><span class="flow-num">${done ? '✓' : n}</span><div class="flow-main"><b>${title}</b><small>${done ? '已完成本步骤' : desc}</small></div>${!done && action ? `<button class="${n === 4 ? 'ghost' : 'btn'}" data-act="${action}" data-pid="${p.id}">${label}</button>` : ''}</div>`;
     const follow = visitDone ? `<div class="post-visit"><b>复诊后，补记下一步</b><p class="sub">把医生新交代的内容记下来；填写下一次复诊日期后，会自动建立下一轮复诊准备。没有新增内容也可以直接结束。</p><textarea id="vf_text" placeholder="如：两周后复查血常规；继续按医生交代用药">${esc(p.data.visitFollowupText || '')}</textarea><div class="row"><input id="vf_date" type="date" value="${esc(p.data.visitFollowupDate || '')}" aria-label="下一次复诊日期"><button class="btn" data-act="vfollowup" data-pid="${p.id}">保存复诊后记录</button></div><button class="ghost" data-act="vfollowup" data-pid="${p.id}" data-skip="1" style="margin-top:8px">没有新增内容，结束本次</button></div>` : '';
-    return `<div class="card flow"><div class="tlh"><h2 style="margin:0">${visitDone ? '复诊完成，补记下一步' : '复诊准备'}</h2><span class="tag ${d < 0 ? 'bad' : ''}">${esc(status)} · ${day} · ${esc(nv)}</span></div><p class="sub">${esc(label(p))} · 只根据你自己填写的日期和资料生成，不会判断病情。</p>${step(1, '准备就诊清单', prepared ? '清单已建立，当前勾选 ' + ckDone + '/' + c.items.length + ' 项' : '选择“复查”模板，系统会建立一份可编辑清单。', prepared, 'vprepare', prepared ? '查看清单' : '去准备')}${step(2, '准备日历提醒文件', calendarDone ? '文件已下载；是否导入系统日历需由你确认。' : '下载文件后，请在系统日历中打开并确认导入。', calendarDone, 'vcalendar', '下载文件')}${step(3, '核对复诊摘要', summaryDone ? '摘要已标记为本次复诊材料。' : '打开摘要，核对范围、未完成事项和想问医生的问题。', summaryDone, 'vsummary', '去核对')}${step(4, '确认本次复诊完成', visitDone ? '你已确认完成；不代表医院系统已完成记录。' : '看完医生后由你确认；不代表医院系统已完成记录。', visitDone, 'vdone', '我已完成')}${follow}</div>`;
+    return `<div class="card flow"><div class="tlh"><h2 style="margin:0">${visitDone ? '复诊完成，补记下一步' : '复诊准备'}</h2><span class="tag ${d < 0 ? 'bad' : ''}">${esc(status)} · ${day} · ${esc(nv)}</span></div><p class="sub">${esc(label(p))} · 只根据你自己填写的日期和资料生成，不会判断病情。</p>${step(1, '准备就诊清单', prepared ? '清单已建立，当前勾选 ' + ckDone + '/' + c.items.length + ' 项' : '选择“复查”模板，系统会建立一份可编辑清单。', prepared, 'vprepare', prepared ? '查看清单' : '去准备')}${step(2, '准备日历提醒文件', calendarDone ? '文件已下载；是否导入系统日历需由你确认。' : '下载文件后，请在系统日历中打开并确认导入。', calendarDone, 'vcalendar', '下载文件')}${step(3, '核对复诊摘要', summaryDone ? '摘要已标记为本次复诊材料。' : '打开摘要，核对范围、未完成事项和想问医生的问题。', summaryDone, 'vsummary', '去核对')}${step(4, '确认本次复诊完成', visitDone ? '你已确认完成；不代表医院系统已完成记录。' : '看完医生后由你确认；不代表医院系统已完成记录。', visitDone, 'vdone', '我已看完本次复诊')}${follow}</div>`;
 }
 function todayItems() {
     const out = [], sz = snzGet(), t0 = today();
@@ -1048,10 +1049,11 @@ function otherVisitList(primary) {
     }).join('');
     return rows ? `<details class="card other-visits"><summary><b>其他档案</b>（${S.profiles.length - (primary ? 1 : 0)}）</summary><p class="sub">首页只突出最早的一次复诊，其他档案保留为状态列表。</p><div class="visit-list">${rows}</div></details>` : '';
 }
+const jnyHint = pr => { if (!pr || !jnyList().length) return ''; const d = daysTo(pr.nv); if (d === null || d < 0 || d > 7) return ''; return '<div class="card"><b>复诊快到了：可先看一下就诊流程清单</b><p class="sub">医院提供了就诊流程清单，勾选只记在您手机里。</p><div class="row"><button class="btn" data-act="jgo">去看就诊流程清单</button></div></div>'; };
 function todayCard() {
     const L = todayItems();
     const primary = primaryVisit();
-    const flow = primary ? visitFlowCard(primary.p, primary.nv) : '';
+    const flow = primary ? visitFlowCard(primary.p, primary.nv) + jnyHint(primary) : '';
     const others = otherVisitList(primary);
     if (!L.length && flow) return flow + others;
     if (!L.length) return S.profiles.length ? flow + others + `<div class="card today"><b>今天没有其他待处理事项</b><p class="sub">复诊任务会单独显示在上方；这里的其他事项只根据你明确填写的医嘱和当前用药生成。</p></div>` : '';
@@ -1068,7 +1070,7 @@ function icsFor(p, o) {
     return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//jiuyiban//CN', 'BEGIN:VEVENT', 'UID:' + o.id + '@jiuyiban', 'DTSTAMP:' + st, 'DTSTART;VALUE=DATE:' + ymd(o.due), 'DTEND;VALUE=DATE:' + n2, 'SUMMARY:' + icsEsc((isSched(o.cat) ? '日程：' : '医嘱到期：') + txt), 'DESCRIPTION:' + icsEsc((isSched(o.cat) ? '本人记录的日程，仅作备忘。' : '按医生原话记录，仅作备忘。') + label(p)), ...al('-PT15H', '明天到期：' + txt), ...al('PT9H', '今天到期：' + txt), 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
 }
 
-const homeView = () => todayCard() + weekCard() + hospCard() + actCard() + posCard() +`<h2 class="gt">我的档案（${S.profiles.length}）</h2><div class="opts">${S.profiles.map(p => { const n = (p.tl || []).length, od = (p.orders || []).filter(o => !o.done).length, last = (p.tl || []).map(r => r.date).sort().pop(); return `<button class="opt" style="--c:${COL[p.disease]}" data-act="pick" data-id="${p.id}"><b>${esc(label(p))}</b><small>${n} 条记录${od ? ' · 待办 ' + od : ''}${last ? ' · ' + esc(last.slice(5)) : ''}</small></button>`; }).join('')}</div><div class="row hb"><button class="btn" data-act="new">＋ 新建档案</button></div><details class="home-more"><summary>需要演示资料？加载一个示例档案</summary><div class="row" style="justify-content:center;margin-top:8px"><button class="ghost" data-act="demo">加载示例档案</button>${HP ? '' : '<button class="ghost" data-act="prevhosp">预览医院版（演示）</button>'}</div></details>` + hubData();
+const homeView = () => todayCard() + weekCard() + `<h2 class="gt">我的档案（${S.profiles.length}）</h2><div class="opts">${S.profiles.map(p => { const n = (p.tl || []).length, od = (p.orders || []).filter(o => !o.done).length, last = (p.tl || []).map(r => r.date).sort().pop(); return `<button class="opt" style="--c:${COL[p.disease]}" data-act="pick" data-id="${p.id}"><b>${esc(label(p))}</b><small>${n} 条记录${od ? ' · 待办 ' + od : ''}${last ? ' · ' + esc(last.slice(5)) : ''}</small></button>`; }).join('')}</div><div class="row hb"><button class="btn" data-act="new">＋ 新建档案</button></div>${(() => { const q = S.profiles.slice().sort((a, b) => ((b.tl || []).map(r => r.date).sort().pop() || '').localeCompare((a.tl || []).map(r => r.date).sort().pop() || ''))[0]; return q ? `<div class="row hb"><button class="ghost" data-act="qadd" data-id="${q.id}">继续记录：${esc(label(q))}</button></div>` : ''; })()}<details class="home-more"><summary>需要演示资料？加载一个示例档案</summary><div class="row" style="justify-content:center;margin-top:8px"><button class="ghost" data-act="demo">加载示例档案</button>${HP ? '' : '<button class="ghost" data-act="prevhosp">预览医院版（演示）</button>'}</div></details>` + hospCard() + jnyCard() + actCard() + posCard() + hubData();
 function bkToast() { if (A.bk && Date.now() - new Date(A.bk).getTime() < 7 * 864e5)
     return; const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = '已保存到本机（未加密，也不等于已备份） <button>去备份</button>'; document.body.appendChild(t); const x = setTimeout(() => t.remove(), 5000); t.querySelector('button').onclick = () => { clearTimeout(x); t.remove(); S.view = 'bk'; view(); scrollTo(0, 0); }; }
 function inAppModal() {
@@ -1299,10 +1301,11 @@ function extra(act, b, p) {
         return 2;
     }
     if (act === 'vdone') {
-        if (!okAsk('确认这次复诊已经完成吗？点“确定”后，这张复诊卡片会变成“补记下一步”。'))
+        const q0 = S.profiles.find(x => x.id === b.dataset.pid), nv0 = q0 ? flowVisit(q0) : '';
+        if (!okAsk(nv0 && nv0 > today() ? '你填的复诊日期是 ' + nv0 + '，还没到。确定已经看完医生了吗？复诊日期到之前保存复诊后记录，不记整理打卡。' : '确认这次复诊已经完成吗？点“确定”后，这张复诊卡片会变成“补记下一步”。'))
             return 2;
         const q = S.profiles.find(x => x.id === b.dataset.pid);
-        if (q && q.data.nvd) { const before = q.data.visitDoneAt || ''; q.data.visitDoneAt = q.data.nvd; save(); showActionUndo('已记录本次复诊完成', () => { q.data.visitDoneAt = before; save(); }); }
+        const nvX = q ? flowVisit(q) : ''; if (q && nvX) { const before = q.data.visitDoneAt || ''; q.data.visitDoneAt = nvX; save(); showActionUndo('已记录本次复诊完成', () => { q.data.visitDoneAt = before; save(); }); }
         return 1;
     }
     if (act === 'vfollowup') {
@@ -1318,7 +1321,8 @@ function extra(act, b, p) {
             if (ex) { ex.text = text; ex.due = due; ex.done = false; }
             else { const id = 'o' + Date.now(); q.orders.push({ id, date: today(), cat: '复诊后记录', text, due, done: false }); q.data.followupOrderId = id; }
         } else if (q.data.followupOrderId) { q.orders = (q.orders || []).filter(o => o.id !== q.data.followupOrderId); q.data.followupOrderId = ''; }
-        save(); view(); showActionUndo(due ? '已建立下一轮复诊准备' : (text ? '已保存复诊后记录' : '已保存：本次暂无新增内容'), () => { q.data.visitFollowupText = before.text; q.data.visitFollowupDate = before.date; q.data.nvd = before.nvd; q.data.visitFollowedAt = before.fol; q.data.followupOrderId = before.foid; q.orders = before.orders; save(); view(); });
+        const vd0 = q.data.visitDoneAt || today(), early = vd0 > today(), gotCi = !skip && (text || due) && !early && ciGrant(q.id + ':' + vd0); if (gotCi) S.actOpen = true;
+        save(); view(); showActionUndo((due ? '已建立下一轮复诊准备' : (text ? '已保存复诊后记录' : '已保存：本次暂无新增内容')) + (gotCi ? '，记 1 次整理打卡（首页“惠民服务”可参与）' : (!skip && (text || due) && early && actList().some(a => a.need) ? '。复诊日期未到，暂不记整理打卡' : '')), () => { q.data.visitFollowupText = before.text; q.data.visitFollowupDate = before.date; q.data.nvd = before.nvd; q.data.visitFollowedAt = before.fol; q.data.followupOrderId = before.foid; q.orders = before.orders; save(); view(); });
         return 1;
     }
     if (act === 'smshare') { sensitiveGate('分享', () => shareText('复诊摘要', smData(p).md)); return 2; }
@@ -1492,8 +1496,28 @@ function extra(act, b, p) {
         try { location.search = '?hospital=demo'; } catch (e) { alert('请在网址后面加上 ?hospital=demo 再打开'); }
         return 2;
     }
+    if (act === 'jgo') { S.jnyOpen = true; const e = document.querySelector('.hosp-jny'); if (e) { e.open = true; e.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return 2; }
+    if (act === 'jtick' || act === 'jreset') {
+        const g = jnyGet(), id = b.dataset.j, j = jnyList().find(x => x.id === id);
+        if (j) {
+            if (act === 'jreset') { if (!okAsk('清空这个流程的勾选？')) return 2; delete g[id]; }
+            else { const i = +b.dataset.s, set = new Set(g[id] || []); if (b.checked) set.add(i); else set.delete(i); g[id] = [...set].sort((x, y) => x - y); }
+            jnySet(g);
+            let earned = 0;
+            if (act === 'jtick' && b.checked && (g[id] || []).length === j.steps.length && actList().some(x => x.need)) { const c = chkGet(); if (c.d !== today()) { c.n++; c.d = today(); chkSet(c); earned = 1; } }
+            const h = document.querySelector('.hosp-jny'); if (h) h.outerHTML = jnyCard();
+            const ha = document.querySelector('.hosp-act'); if (ha) ha.outerHTML = actCard();
+            if (earned) { modal('<h2>整理打卡 +1</h2><p class="sub">您完成了「' + esc(j.t) + '」。当前可用整理打卡：<b>' + chkAvail() + '</b> 次。有的惠民服务需要整理打卡后才能参与，每天最多记 1 次，只记在您手机里。</p><div class="row"><button class="ghost" id="chk_ok">知道了</button><button class="btn" id="chk_go">去看惠民服务</button></div>'); const ov = [...document.querySelectorAll('.ov')].pop(), k = ov && ov.querySelector('#chk_ok'); if (k) k.onclick = () => ov.remove(); const gb = ov && ov.querySelector('#chk_go'); if (gb) gb.onclick = () => goCard('.hosp-act', 'actOpen'); }
+        }
+        return 2;
+    }
     if (act === 'actopen' || act === 'actlog') {
         const a = actList().find(x => x.id === b.dataset.id);
+        if (a && act === 'actopen' && a.need && a.per !== 'free' && chkAvail() < a.need && !actDone(a)) {
+            modal('<h2>' + esc(a.t) + '</h2><p>这个活动需要 <b>' + a.need + ' 次</b>整理打卡才能参与，您现在有 <b>' + chkAvail() + ' 次</b>，还差 <b>' + (a.need - chkAvail()) + ' 次</b>。</p><p class="sub">' + CHKTXT + '</p><div class="bar"><button class="ghost" data-go="x">先不了</button>' + (jnyList().length ? '<button class="btn" id="ag_go">去做流程清单</button>' : '') + '<button class="ghost" id="ag_pf">去看我的档案</button></div>');
+            const ov = [...document.querySelectorAll('.ov')].pop(), gb = ov && ov.querySelector('#ag_go'); if (gb) gb.onclick = () => goCard('.hosp-jny', 'jnyOpen'); const pf = ov && ov.querySelector('#ag_pf'); if (pf) pf.onclick = () => { ov.remove(); const e = document.querySelector('.gt'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+            return 2;
+        }
         if (a) { if (act === 'actopen') actPlay(a); else actLog(a); }
         return 2;
     }
@@ -1933,7 +1957,7 @@ catch (e) {
 }
 let STO = true, IDBOK = true;
 const INAPP = typeof navigator !== 'undefined' && /MicroMessenger|\sQQ\//i.test(navigator.userAgent || '');
-const needBk = () => { let n = 0; S.profiles.filter(p => !p.demo).forEach(p => { n += (p.tl || []).length; (p.mx || []).forEach(m => n += m.pts.length); n += ((p.ck && p.ck.items) || []).length; if (p.pz && (p.pz.place || p.pz.need || p.pz.cond))
+const needBk = () => { let n = 0; S.profiles.filter(p => !p.demo).forEach(p => { n += (p.tl || []).length; (p.mx || []).forEach(m => n += m.pts.length); n += ((p.ck && p.ck.items) || []).filter(x => x.done).length; if (p.pz && (p.pz.place || p.pz.need || p.pz.cond))
         n += 1; }); if (n < 1)
     return false; return !A.bk || Date.now() - new Date(A.bk).getTime() > 30 * 864e5; };
 const lockBanner = () => (LOCK ? `<div class="card" style="border-color:#dc2626"><b><svg class="ic il" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/></svg>数据异常保护中</b><br>本机档案读取失败，现在的新增和修改都不会保存，以免覆盖原数据。${BADOK ? '原始数据已另存一份。' : '<b>原始数据另存失败，请不要清理浏览器数据。</b>'}<div class="bar"><button class="ghost" data-act="bk">从备份恢复</button><button class="ghost del" data-act="unlock">放弃异常数据，重新开始</button></div></div>` : '') + (DIRTY ? `<div class="card" style="border-color:#dc2626"><b><svg class="ic il" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/></svg>当前修改尚未可靠保存</b><br>刷新或关闭页面可能丢失。请先导出备份，并释放浏览器空间后重试。<div class="bar"><button class="ghost" data-act="bk">去备份</button></div></div>` : '');
@@ -1964,7 +1988,8 @@ const HOSP = { demo: { hideRef: true, c: '#0f5c55', n: '示例医院（演示）
         ann: [{ t: '国庆假期门诊安排（示例）', d: '10月1日至7日门诊时间调整，请以医院官方通知为准。', date: '2026-09-28' }, { t: '秋季流感疫苗接种提示（示例）', d: '接种时间、对象与禁忌请咨询接种门诊或您的医生。', date: '2026-10-10' }],
         pre: [{ t: '空腹抽血', d: '一般需空腹 8–12 小时，具体以检查通知为准。' }, { t: '腹部超声', d: '按通知要求空腹或憋尿，具体以检查通知为准。' }],
         tel: { n: '示例医院 VIP 服务电话', num: '010-00000000' }, book: { n: '医院官方预约入口（示例）', url: 'https://example.com/' },
-        act: [{ id: 'spring', t: '惠民服务小转盘（示例）', kind: 'wheel', per: 'day', valid: 30, pin: '1234', rule: '每人每天一次，凭凭证到院核销，30 天内有效。', note: '服务内容和数量由医院设置。', items: [{ t: '口腔检查一次', g: '一等奖', q: '本周限量 5 个', d: '到口腔科前台兑换（示例）' }, { t: '体检套餐九折', g: '二等奖', d: '预约体检时出示凭证（示例）' }, { t: '停车券一张', d: '到服务台领取（示例）' }, { t: '谢谢参与' }, { t: '健康手册一本', d: '到服务台领取（示例）' }, { t: '免费量血压', g: '三等奖', d: '到护士站兑换（示例）' }, { t: '免费体脂检测', g: '三等奖', d: '到体检中心兑换（示例）' }, { t: '咖啡一杯', d: '到院内咖啡区兑换（示例）' }] }, { id: 'family', t: '亲子家庭转盘（示例）', kind: 'wheel', per: 'once', valid: 30, pin: '1234', rule: '每人限一次，30 天内凭凭证到院核销。', note: '适合儿科、妇产科等家庭就诊场景。', items: [{ t: '儿童画册一本', d: '到服务台领取（示例）' }, { t: '儿童身高体重测量', d: '到儿科护士站兑换（示例）' }, { t: '停车券两张', d: '到服务台领取（示例）' }, { t: '谢谢参与' }, { t: '帆布袋一个', d: '到服务台领取（示例）' }, { t: '孕妈课程体验名额', d: '到妇产科前台预约（示例）' }] }, { id: 'qian', t: '惠民服务抽签筒（示例）', kind: 'draw', per: 'day', valid: 14, pin: '1234', rule: '每人每天一次，14 天内有效。', note: '签文即服务，由医院提供。', items: [{ t: '咖啡一杯', d: '到院内咖啡区兑换（示例）' }, { t: '谢谢参与' }, { t: '帆布袋一个', d: '到服务台领取（示例）' }, { t: '体脂检测一次', d: '到体检中心兑换（示例）' }, { t: '再来一次明天见', n: 1 }] }, { id: 'visit', t: '复诊守约签（示例）', kind: 'draw', per: 'once', valid: 60, pin: '1234', rule: '按时复诊后到前台领取一次，60 天内有效。', note: '鼓励按约复诊，由医院提供。', items: [{ t: '挂号费减免券', d: '复诊挂号时出示（示例）' }, { t: '停车券一张', d: '到服务台领取（示例）' }, { t: '保温杯一个', d: '到服务台领取（示例）' }, { t: '笔记本一本', d: '到服务台领取（示例）' }, { t: '谢谢参与' }] }, { id: 'fest', t: '节日惠民签（示例）', kind: 'draw', per: 'once', valid: 30, pin: '1234', rule: '节日期间每人一次，30 天内有效。', note: '节日活动，奖项由医院设置。', items: [{ t: '晴雨伞一把', d: '到服务台领取（示例）' }, { t: '文创书签一套', d: '到服务台领取（示例）' }, { t: '咖啡一杯', d: '到院内咖啡区兑换（示例）' }, { t: '体检九折券', d: '预约体检时出示（示例）' }, { t: '谢谢参与' }] }, { id: 'health', t: '健康小课堂签（示例）', kind: 'draw', per: 'free', valid: 30, pin: '1234', rule: '无次数限制，可多次参与，仅作互动。', note: '抽到的是科普主题，不涉及疾病判断。', items: [{ t: '早餐搭配小贴士', d: '均衡饮食的日常小建议，仅作科普' }, { t: '饭后散步的好处', d: '适量活动的日常小建议，仅作科普' }, { t: '规律作息怎么养成', d: '睡眠习惯小建议，仅作科普' }, { t: '看电子屏的护眼习惯', d: '用眼休息小建议，仅作科普' }, { t: '喝水小贴士', d: '日常饮水小建议，仅作科普' }] }],
+        jny: [{ id: 'scope', t: '胃肠镜检查准备（示例）', note: '示例内容，具体请以医院发给您的检查通知为准。', steps: [{ t: '确认检查时间和地点', d: '看一下预约短信或检查单上的时间' }, { t: '按医院要求准备饮食', d: '以医院发的饮食说明为准' }, { t: '向医生说明正在用的药', d: '把药名带上，由医生决定怎么处理' }, { t: '携带证件和既往报告' }, { t: '检查后记录医生交代的事项', d: '回到「档案」里记下复查时间' }] }, { id: 'revisit', t: '复诊前整理（示例）', steps: [{ t: '整理上次的检查报告' }, { t: '写下近期症状变化' }, { t: '列出现在用的药' }, { t: '写下想问医生的问题' }, { t: '生成复诊摘要带去就诊' }] }],
+        act: [{ id: 'spring', t: '惠民服务小转盘（示例）', kind: 'wheel', per: 'day', valid: 30, pin: '1234', rule: '每人每天一次，凭该凭证到院核销，30 天内有效。', note: '服务内容和数量由医院设置。', items: [{ t: '定制保温杯一个', g: '一等奖', q: '本周限量 5 个', d: '到服务台领取（示例）' }, { t: '文创笔记本套装', g: '二等奖', d: '到服务台领取（示例）' }, { t: '停车券一张', d: '到服务台领取（示例）' }, { t: '谢谢参与' }, { t: '健康手册一本', d: '到服务台领取（示例）' }, { t: '便携雨衣一件', g: '三等奖', d: '到服务台领取（示例）' }, { t: '定制手提袋一个', g: '三等奖', d: '到服务台领取（示例）' }, { t: '咖啡一杯', d: '到院内咖啡区兑换（示例）' }] }, { id: 'family', t: '亲子家庭转盘（示例）', kind: 'wheel', per: 'once', valid: 30, pin: '1234', rule: '每人限一次，30 天内凭该凭证到院核销。', note: '适合儿科、妇产科等家庭就诊场景。', items: [{ t: '儿童画册一本', d: '到服务台领取（示例）' }, { t: '儿童贴纸一套', d: '到服务台领取（示例）' }, { t: '停车券两张', d: '到服务台领取（示例）' }, { t: '谢谢参与' }, { t: '帆布袋一个', d: '到服务台领取（示例）' }, { t: '亲子绘本一本', d: '到服务台领取（示例）' }] }, { id: 'qian', t: '惠民服务抽签筒（示例）', kind: 'draw', per: 'day', need: 1, valid: 14, pin: '1234', rule: '每人每天一次，14 天内有效；需先完成一个就诊流程（整理打卡）。', note: '签文即服务，由医院提供。', items: [{ t: '咖啡一杯', d: '到院内咖啡区兑换（示例）' }, { t: '谢谢参与' }, { t: '帆布袋一个', d: '到服务台领取（示例）' }, { t: '健康手册一本', d: '到服务台领取（示例）' }, { t: '再来一次明天见', n: 1 }] }, { id: 'visit', t: '复诊守约签（示例）', kind: 'draw', need: 1, per: 'once', valid: 60, pin: '1234', rule: '需整理打卡 1 次（完成一个就诊流程，或复诊日期后保存复诊后记录，各记 1 次），凭证到前台核销，60 天内有效。', note: '鼓励按约复诊，由医院提供。', items: [{ t: '咖啡券两张', d: '到服务台领取（示例）' }, { t: '停车券一张', d: '到服务台领取（示例）' }, { t: '保温杯一个', d: '到服务台领取（示例）' }, { t: '笔记本一本', d: '到服务台领取（示例）' }, { t: '谢谢参与' }] }, { id: 'fest', t: '节日惠民签（示例）', kind: 'draw', per: 'once', valid: 30, pin: '1234', rule: '节日期间每人一次，30 天内有效。', note: '节日活动，奖项由医院设置。', items: [{ t: '晴雨伞一把', d: '到服务台领取（示例）' }, { t: '文创书签一套', d: '到服务台领取（示例）' }, { t: '咖啡一杯', d: '到院内咖啡区兑换（示例）' }, { t: '文创帆布袋一个', d: '到服务台领取（示例）' }, { t: '谢谢参与' }] }, { id: 'health', t: '健康小课堂签（示例）', kind: 'draw', per: 'free', valid: 30, pin: '1234', rule: '无次数限制，可多次参与，仅作互动。', note: '抽到的是科普主题，不涉及疾病判断。', items: [{ t: '早餐搭配小贴士', d: '均衡饮食的日常小建议，仅作科普' }, { t: '饭后散步的好处', d: '适量活动的日常小建议，仅作科普' }, { t: '规律作息怎么养成', d: '睡眠习惯小建议，仅作科普' }, { t: '看电子屏的护眼习惯', d: '用眼休息小建议，仅作科普' }, { t: '喝水小贴士', d: '日常饮水小建议，仅作科普' }] }],
         campus: [{ n: '本部', addr: '示例路 1 号', tel: '010-00000001' }, { n: '东院', addr: '示例路 99 号', tel: '010-00000002' }],
         l:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTIiIGZpbGw9IiMwZjVjNTUiLz48cGF0aCBkPSJNMjYgMTRoMTJ2MTJoMTJ2MTJIMzh2MTJIMjZWMzhIMTRWMjZoMTJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+' } };
 /* 民营医院门诊演示：只开放部分科室，不显示专科病种（dis:[]） */
@@ -1978,6 +2003,8 @@ function cfgClean(o) {
     const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '', arr = (v, n) => Array.isArray(v) ? v.filter(x => x && typeof x === 'object' && !Array.isArray(x)).slice(0, n) : [];
     const lst = (v, n, f) => arr(v, n).map(f);
     const c = { n: str(o.n, 40) || '医院', w: str(o.w, 200), l: typeof o.l === 'string' && o.l.length < 200000 ? o.l : '', c: str(o.c, 7), showRef: o.showRef === true, hideRef: o.hideRef !== false };
+    if (typeof o.splash === 'string' && o.splash.trim()) c.splash = o.splash.trim().slice(0, 30);
+    if (o.trial === true) c.trial = true;
     if (typeof o.icp === 'string') c.icp = o.icp.slice(0, 40);
     if (typeof o.gaba === 'string') c.gaba = o.gaba.slice(0, 40);
     c.vip = lst(o.vip, 30, x => ({ t: str(x.t, 40), d: str(x.d, 200) }));
@@ -1989,7 +2016,8 @@ function cfgClean(o) {
     if (Array.isArray(o.dept)) c.dept = o.dept.filter(x => typeof x === 'string').slice(0, 20).map(x => x.slice(0, 20));
     if (Array.isArray(o.dis)) c.dis = o.dis.filter(x => typeof x === 'string').slice(0, 20).map(x => x.slice(0, 20));
     if (o.rg && typeof o.rg === 'object' && !Array.isArray(o.rg)) { c.rg = {}; Object.keys(o.rg).slice(0, 60).forEach(k => { const v = o.rg[k]; if (Array.isArray(v) && v.length === 2) c.rg[k.slice(0, 20)] = v.map(x => x === '' || x === null ? '' : (isFinite(+x) ? +x : '')); }); }
-    c.act = lst(o.act, 10, a => ({ id: str(a.id, 30), t: str(a.t, 30), kind: a.kind, per: a.per, valid: +a.valid || 30, pin: str(String(a.pin || ''), 6), rule: str(a.rule, 120), note: str(a.note, 120), items: Array.isArray(a.items) ? a.items.slice(0, 12).map(x => typeof x === 'string' ? x.slice(0, 24) : (x && typeof x === 'object' ? { t: str(x.t, 24), d: str(x.d, 60), g: str(x.g, 6), q: str(x.q, 14), w: +x.w || 0, n: !!x.n } : '')) : [] }));
+    c.jny = lst(o.jny, 6, j => ({ id: str(j.id, 30), t: str(j.t, 30), note: str(j.note, 120), steps: Array.isArray(j.steps) ? j.steps.filter(x => x && typeof x === 'object' && !Array.isArray(x)).slice(0, 15).map(x => ({ t: str(x.t, 40), d: str(x.d, 160) })) : [] }));
+    c.act = lst(o.act, 10, a => ({ id: str(a.id, 30), t: str(a.t, 30), kind: a.kind, per: a.per, need: a.per === 'free' ? 0 : Math.min(10, Math.max(0, parseInt(a.need, 10) || (a.ci === true || a.ci === 1 ? 1 : 0))), start: /^\d{4}-\d{2}-\d{2}$/.test(String(a.start || '')) ? String(a.start) : '', end: /^\d{4}-\d{2}-\d{2}$/.test(String(a.end || '')) ? String(a.end) : '', valid: +a.valid || 30, pin: str(String(a.pin || ''), 6), rule: str(a.rule, 120), note: str(a.note, 120), items: Array.isArray(a.items) ? a.items.slice(0, 12).map(x => typeof x === 'string' ? x.slice(0, 24) : (x && typeof x === 'object' ? { t: str(x.t, 24), d: str(x.d, 60), g: str(x.g, 6), q: str(x.q, 14), w: +x.w || 0, n: !!x.n } : '')) : [] }));
     return c;
 }
 const HP_KEY = (() => { try { return (new URLSearchParams(location.search).get('hospital') || '').trim().toLowerCase(); } catch (e) { return ''; } })();
@@ -1997,6 +2025,7 @@ const HP = (() => { try {
     const k = HP_KEY;
     if (!k) return null;
     if (Object.prototype.hasOwnProperty.call(HOSP, k)) return HOSP[k];
+    if (k === 'preview') { const pv = cfgClean(JSON.parse(localStorage.getItem('companion.preview') || 'null')); if (pv) pv.n = (pv.n + '（预览，未上线）').slice(0, 40); return pv; }
     if (!/^[A-Za-z0-9_-]{1,30}$/.test(k)) return null;
     const x = new XMLHttpRequest();
     x.open('GET', 'config/' + k + '.json?t=' + Math.floor(Date.now() / 60000), false);
@@ -2012,6 +2041,7 @@ const SITE_ICP = '', SITE_GABA = '';
 (() => { const v = String((HP && HP.icp) || SITE_ICP || '').trim(), g = String((HP && HP.gaba) || SITE_GABA || '').trim(), el = document.getElementById('icp'); let h = '';
     if (/^[\u4e00-\u9fa5]{1,2}ICP备\d{6,10}号(-\d{1,3})?$/.test(v)) h += '<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">' + v + '</a>';
     if (/^[\u4e00-\u9fa5]{1,2}公网安备 ?\d{12,14}号$/.test(g)) h += (h ? ' &nbsp; ' : '') + '<a href="https://beian.mps.gov.cn/" target="_blank" rel="noopener noreferrer">' + g + '</a>';
+    if (HP && HP.trial) h = '<div>试点临时试用地址，仅供试用；正式上线后地址会更换，届时请先导出备份</div>' + h;
     if (el && h) { el.hidden = false; el.innerHTML = h; } })();
 /* 带了医院参数却读不到配置（文件不存在、名称不匹配、json 写错）：不显示演示内容，改为提示。 */
 const CFG_ERR = !!HP_KEY && !HP;
@@ -2022,50 +2052,89 @@ const lgImg = h => LG ? '<img src="' + LG + '" alt="" style="height:' + h + 'px;
 /* 惠民服务（抽签筒、小转盘）：由医院在配置里设置服务内容和兑换规则（act），用户抽中后得到一张带流水号和有效期的兑换凭证，凭此到院由工作人员核销。
    结果和凭证只在本机生成、保存，不上传；本页面无法防伪，兑换以医院现场核验和医院自己的登记（流水号）为准，同一流水号医院只应兑换一次。
    act:[{id,t,kind:'wheel'|'draw',per:'day'|'once'|'free',valid:有效天数,pin:'核销密码(可选)',rule:'活动说明',note,items:[字符串 或 {t:服务名,d:兑换说明,g:奖项等级,q:限量说明,w:抽中权重(可选，默认一等奖1/二等奖2/其他3，数字越大越容易抽中),n:1(表示谢谢参与，无服务)}]}] */
-const ACTK = 'companion.act';
+const ACTK = 'companion.act.' + (HP_KEY || 'demo');
 const actGet = () => { try { return JSON.parse(localStorage.getItem(ACTK) || '{}') || {}; } catch (e) { return {}; } };
 const actSet = o => { try { localStorage.setItem(ACTK, JSON.stringify(o)); } catch (e) { } };
 const rnd = n => { try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; } catch (e) { return Math.floor(Math.random() * n); } };
 const nowStr = () => { const d = new Date(), z = x => String(x).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()) + ':' + z(d.getSeconds()); };
-const actDemo = () => !HP;
-const actSrc = () => HP ? HP.act : HOSP.demo.act;
+const actDemo = () => !HP || HP === HOSP.demo;
+const actSrc = () => HP ? HP.act : [];
 function actList() {
     const src = actSrc();
     if (!Array.isArray(src)) return [];
     const it = x => typeof x === 'string' ? { t: x.trim().slice(0, 24), d: '', n: /^谢谢参与/.test(x.trim()), g: '', q: '' } : (x && typeof x === 'object' && typeof x.t === 'string' ? { t: x.t.trim().slice(0, 24), g: typeof x.g === 'string' ? x.g.trim().slice(0, 6) : '', w: +x.w > 0 ? Math.min(100, +x.w) : 0, q: typeof x.q === 'string' ? x.q.trim().slice(0, 14) : '', d: typeof x.d === 'string' ? x.d.trim().slice(0, 60) : '', n: !!x.n || /^谢谢参与/.test(x.t.trim()) } : null);
-    return src.filter(a => a && typeof a === 'object' && /^[\w-]{1,30}$/.test(a.id || '') && (a.kind === 'wheel' || a.kind === 'draw' || a.kind === 'lottery') && typeof a.t === 'string' && Array.isArray(a.items)).map(a => ({ id: a.id, t: a.t.slice(0, 30), kind: a.kind === 'wheel' ? 'wheel' : 'draw', per: a.per === 'once' || a.per === 'free' ? a.per : 'day', valid: Math.min(365, Math.max(1, parseInt(a.valid, 10) || 30)), pin: /^\d{4,6}$/.test(String(a.pin || '')) ? String(a.pin) : '', rule: typeof a.rule === 'string' ? a.rule.slice(0, 120) : '', note: typeof a.note === 'string' ? a.note.slice(0, 120) : '', items: a.items.map(it).filter(x => x && x.t).slice(0, 12) })).filter(a => a.items.length >= 2).filter((a, i, L) => L.findIndex(x => x.id === a.id) === i).slice(0, 10);
+    return src.filter(a => a && typeof a === 'object' && /^[\w-]{1,30}$/.test(a.id || '') && (a.kind === 'wheel' || a.kind === 'draw' || a.kind === 'lottery') && typeof a.t === 'string' && Array.isArray(a.items)).map(a => ({ id: a.id, t: a.t.slice(0, 30), kind: a.kind === 'wheel' ? 'wheel' : 'draw', per: a.per === 'once' || a.per === 'free' ? a.per : 'day', need: a.per === 'free' ? 0 : Math.min(10, Math.max(0, parseInt(a.need, 10) || (a.ci === true || a.ci === 1 ? 1 : 0))), start: /^\d{4}-\d{2}-\d{2}$/.test(String(a.start || '')) ? String(a.start) : '', end: /^\d{4}-\d{2}-\d{2}$/.test(String(a.end || '')) ? String(a.end) : '', valid: Math.min(365, Math.max(1, parseInt(a.valid, 10) || 30)), pin: /^\d{4,6}$/.test(String(a.pin || '')) ? String(a.pin) : '', rule: typeof a.rule === 'string' ? a.rule.slice(0, 120) : '', note: typeof a.note === 'string' ? a.note.slice(0, 120) : '', items: a.items.map(it).filter(x => x && x.t).slice(0, 12) })).filter(a => a.items.length >= 2).filter((a, i, L) => L.findIndex(x => x.id === a.id) === i).slice(0, 10);
 }
 const vState = v => v.n ? '' : v.used ? '已兑换' : (v.exp && v.exp < today()) ? '已过期' : '待兑换';
 const actPick = L => { const w = L.map(x => x.w || (x.n ? 3 : x.g === '一等奖' ? 1 : x.g === '二等奖' ? 2 : 3)), T = w.reduce((a, b) => a + b, 0); let r = rnd(T * 100) / 100; for (let k = 0; k < w.length; k++) { r -= w[k]; if (r < 0) return k; } return w.length - 1; };
-function actDone(a) { const r = (actGet()[a.id] || []); return a.per === 'once' ? r.length > 0 : a.per === 'day' ? r.some(x => x.d === today()) : false; }
+const ciGrant = key => { if (!actList().some(a => a.need)) return false; const c = chkGet(); if (c.got.includes(key)) return false; c.got.push(key); if (c.got.length > 200) c.got.splice(0, c.got.length - 200); c.n++; chkSet(c); return true; };
+const CHKK = 'companion.chk.' + (HP_KEY || 'demo');
+const chkGet = () => { try { const o = JSON.parse(localStorage.getItem(CHKK) || '{}') || {}; return { n: Math.max(0, +o.n || 0), u: Math.max(0, +o.u || 0), d: typeof o.d === 'string' ? o.d : '', got: Array.isArray(o.got) ? o.got : [] }; } catch (e) { return { n: 0, u: 0, d: '', got: [] }; } };
+const chkSet = o => { try { localStorage.setItem(CHKK, JSON.stringify(o)); } catch (e) { } };
+const CHKTXT = '整理打卡怎么获得：① 勾完医院「就诊流程清单」里的一个流程，记 1 次（每天最多 1 次）；② 复诊后在档案里保存“复诊后记录”，每次复诊记 1 次（复诊日期到了才计）。只记在您手机里，不上传。整理打卡是您本人在本设备上的自助记录，医院不会远程确认您是否真的完成。';
+const chkAvail = () => { const c = chkGet(); return Math.max(0, c.n - c.u); };
+const goCard = (cls, key) => { document.querySelectorAll('.ov').forEach(x => x.remove()); S[key] = true; const e = document.querySelector(cls); if (e) { e.open = true; e.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
+const actWin = a => a.start && today() < a.start ? '活动 ' + a.start + ' 开始' : a.end && today() > a.end ? '活动已结束' : '';
+function actDone(a) { if (actWin(a)) return true; const r = (actGet()[a.id] || []); return a.per === 'once' ? r.length > 0 : a.per === 'day' ? r.some(x => x.d === today()) : false; }
+const JNYK = 'companion.jny.' + (HP_KEY || 'demo');
+const jnyGet = () => { try { return JSON.parse(localStorage.getItem(JNYK) || '{}') || {}; } catch (e) { return {}; } };
+const jnySet = o => { try { localStorage.setItem(JNYK, JSON.stringify(o)); } catch (e) { } };
+function jnyList() {
+    const src = HP ? HP.jny : HOSP.demo.jny;
+    if (!Array.isArray(src)) return [];
+    return src.filter(j => j && typeof j === 'object' && /^[\w-]{1,30}$/.test(j.id || '') && typeof j.t === 'string' && j.t.trim() && Array.isArray(j.steps)).map(j => ({ id: j.id, t: j.t.trim().slice(0, 30), note: typeof j.note === 'string' ? j.note.slice(0, 120) : '', steps: j.steps.filter(x => x && typeof x.t === 'string' && x.t.trim()).slice(0, 15).map(x => ({ t: x.t.trim().slice(0, 40), d: typeof x.d === 'string' ? x.d.trim().slice(0, 160) : '' })) })).filter(j => j.steps.length >= 1).filter((j, i, L) => L.findIndex(x => x.id === j.id) === i).slice(0, 6);
+}
+function jnyCard() {
+    const L = jnyList();
+    if (!L.length) return '';
+    const g = jnyGet(), lo = S.lo || {}, hn = HP ? esc(HP.n) : '示例医院';
+    const hc = HP && /^#[0-9a-fA-F]{6}$/.test(HP.c || '') ? HP.c : '#0f5c55';
+    return '<details class="card hosp-jny"' + (S.jnyOpen ? ' open' : '') + ' style="border-left:4px solid ' + hc + '"><summary style="cursor:pointer"><div><b>就诊流程清单</b><div class="sub" style="margin:2px 0 0">' + L.length + ' 个流程 · 勾选只记在您自己的手机里' + (actList().some(a => a.need) ? ' · 勾完一个流程得 1 次整理打卡（现有 ' + chkAvail() + ' 次）' : '') + '</div></div></summary><p class="sub">以下步骤由' + hn + '提供，是一般性的就诊准备提示，不构成对您个人病情的建议，具体请以医院和医生的安排为准。勾选进度只保存在本机。</p>'
+        + L.map(j => { const done = new Set(g[j.id] || []), n = j.steps.filter((x, i) => done.has(i)).length;
+            return '<details class="fl" data-fk="jny_' + esc(j.id) + '"' + (lo['jny_' + j.id] ? ' open' : '') + '><summary><b>' + esc(j.t) + '</b>（' + n + '/' + j.steps.length + (n === j.steps.length ? ' 已完成' : '') + '）</summary>' + (j.note ? '<p class="sub">' + esc(j.note) + '</p>' : '')
+                + j.steps.map((x, i) => '<label class="item" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-act="jtick" data-j="' + esc(j.id) + '" data-s="' + i + '"' + (done.has(i) ? ' checked' : '') + ' style="margin-top:4px;width:22px;height:22px;flex:none" aria-label="' + esc(x.t) + '"><span><b' + (done.has(i) ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + (i + 1) + '. ' + esc(x.t) + '</b>' + (x.d ? '<span class="sub" style="display:block">' + esc(x.d) + '</span>' : '') + '</span></label>').join('')
+                + (n ? '<div class="row"><button class="ghost" data-act="jreset" data-j="' + esc(j.id) + '">清空这个流程的勾选</button></div>' : '') + '</details>'; }).join('') + '</details>';
+}
 function actCard() {
-    const L = actList();
+    const L = actList().slice().sort((x, y) => (y.need ? 1 : 0) - (x.need ? 1 : 0));
+    if (!HP && !HP_KEY) return '<div class="card"><b>医院服务与惠民活动</b><p class="sub">请从医院提供的链接或二维码进入，即可看到医院服务和惠民活动。想先看看效果，可点下方“预览医院版（演示）”。</p></div>';
+    
     if (!L.length) return '';
     const g = actGet(), name = HP ? esc(HP.n) : '示例医院';
-    return '<details class="card hosp-act"' + (S.actOpen ? ' open' : '') + '><summary style="cursor:pointer"><div><b>惠民服务' + (actDemo() ? '（演示）' : '') + '</b><div class="sub" style="margin:2px 0 0">' + L.length + ' 个活动 · 抽中凭凭证到院兑换</div></div></summary>' + (actDemo() ? '<p class="sub" style="color:#b45309"><b>这是给医院看的演示：</b>服务内容、有效期和核销规则都由医院自己设置并提供，下面的内容仅为示例。核销演示密码：1234。</p>' : '') + '<p class="sub">由' + name + '提供。抽中后会生成一张兑换凭证，凭凭证到院由工作人员核销；结果只保存在您的手机上，兑换以医院现场核验为准，本工具不涉及付款。</p>'
-        + L.map(a => { const vs = (g[a.id] || []).filter(v => vState(v) === '待兑换').length; return '<div class="item"><div class="tlh"><b>' + esc(a.t) + '</b><span class="tag">' + (a.kind === 'wheel' ? '小转盘' : '抽签筒') + '</span></div>' + (a.note ? '<div class="sub">' + esc(a.note) + '</div>' : '') + (a.rule ? '<div class="sub">规则：' + esc(a.rule) + '</div>' : '') + '<div class="row"><button class="btn" data-act="actopen" data-id="' + esc(a.id) + '"' + (actDone(a) ? ' disabled' : '') + '>' + (actDone(a) ? (a.per === 'once' ? '您已参与过' : '今天已参与') : '去参与') + '</button><button class="ghost" data-act="actlog" data-id="' + esc(a.id) + '">我的凭证' + (vs ? '（待兑换 ' + vs + '）' : '') + '</button></div></div>'; }).join('') + '</details>';
+    return '<details class="card hosp-act"' + (S.actOpen ? ' open' : '') + '><summary style="cursor:pointer"><div><b>惠民服务' + (actDemo() ? '（演示）' : '') + '</b><div class="sub" style="margin:2px 0 0">' + L.length + ' 个活动 · 抽中凭证到院兑换' + '' + (L.some(x => x.need) ? ' · 整理打卡 ' + chkAvail() + ' 次' : '') + '</div></div></summary>' + (actDemo() ? '<p class="sub" style="color:#b45309"><b>这是给医院看的演示：</b>服务内容、有效期和核销规则都由医院自己设置并提供，下面的内容仅为示例。核销演示密码：1234。</p>' : '') + '<p class="sub">由' + name + '提供。抽中后会生成一张兑换凭证，凭该凭证到院由工作人员核销；结果只保存在您的手机上，兑换以医院现场核验为准，本工具不涉及付款。</p>'
+        + L.map(a => { const vs = (g[a.id] || []).filter(v => vState(v) === '待兑换').length; return '<div class="item"><div class="tlh"><b>' + esc(a.t) + '</b><span class="tag">' + (a.kind === 'wheel' ? '小转盘' : '抽签筒') + '</span></div>' + (a.note ? '<div class="sub">' + esc(a.note) + '</div>' : '') + (a.rule ? '<div class="sub">规则：' + esc(a.rule) + '</div>' : '') + (a.start || a.end ? '<div class="sub">活动时间：' + esc(a.start || '即日起') + ' 至 ' + esc(a.end || '长期') + '</div>' : '') + (a.need ? '<div class="sub"><b>整理打卡：</b>需要 ' + a.need + ' 次（您现有 ' + chkAvail() + ' 次）；抽到有服务的奖项才扣打卡，抽到“谢谢参与”不扣。' + CHKTXT.replace('整理打卡怎么获得：', '') + '</div>' : '') + '<div class="row"><button class="btn" data-act="actopen" data-id="' + esc(a.id) + '"' + (actDone(a) ? ' disabled' : '') + '>' + (actDone(a) ? (actWin(a) || (a.per === 'once' ? '您已参与过' : '今天已参与')) : (a.need && chkAvail() < a.need ? '还差 ' + (a.need - chkAvail()) + ' 次整理打卡' : '参加活动')) + '</button><button class="ghost" data-act="actlog" data-id="' + esc(a.id) + '">我的凭证' + (vs ? '（待兑换 ' + vs + '）' : '') + '</button></div></div>'; }).join('') + '</details>';
 }
-document.addEventListener('toggle', e => { if (e.target && e.target.classList && e.target.classList.contains('pk-dis')) S.disOpen = e.target.open; if (e.target && e.target.classList && e.target.classList.contains('hosp-act')) S.actOpen = e.target.open; if (e.target && e.target.classList && e.target.classList.contains('hosp')) S.hospOpen = e.target.open; }, true);
+document.addEventListener('toggle', e => { if (e.target && e.target.classList && e.target.classList.contains('pk-dis')) S.disOpen = e.target.open; if (e.target && e.target.classList && e.target.classList.contains('hosp-act')) S.actOpen = e.target.open; if (e.target && e.target.classList && e.target.classList.contains('hosp-jny')) S.jnyOpen = e.target.open; if (e.target && e.target.classList && e.target.classList.contains('hosp')) S.hospOpen = e.target.open; }, true);
 function actVoucherHtml(a, v) {
-    return '<div style="border:2px dashed ' + (v.n ? '#9ca3af' : '#0f766e') + ';border-radius:12px;padding:10px 12px;margin-top:8px;text-align:left"><div style="font-size:18px;font-weight:700">' + (v.g ? '<span class="tag">' + esc(v.g) + '</span> ' : '') + esc(v.r) + '</div>' + (v.n ? '<div class="sub">本次没有服务，欢迎下次参与。</div>' : '<div class="sub">' + esc(v.desc || '请到院向工作人员出示本凭证') + '</div><div class="sub">流水号：<b>' + esc(v.sn) + '</b></div><div class="sub">抽取时间：' + esc(v.at) + '</div><div class="sub">有效期至：' + esc(v.exp) + ' · 状态：<b>' + vState(v) + '</b>' + (v.used ? '（' + esc(v.ut) + '）' : '') + '</div>') + '</div>';
+    return '<div style="border:2px dashed ' + (v.n ? '#9ca3af' : '#0f766e') + ';border-radius:12px;padding:10px 12px;margin-top:8px;text-align:left"><div style="font-size:18px;font-weight:700">' + (v.g ? '<span class="tag">' + esc(v.g) + '</span> ' : '') + esc(v.r) + '</div>' + (v.n ? '<div class="sub">本次没有服务，欢迎下次参与。</div>' : '<div class="sub">' + esc(v.desc || '请到院向工作人员出示本凭证') + '</div><div class="sub">流水号：<b>' + esc(v.sn) + '</b> <button type="button" class="ghost" data-cpsn="' + esc(v.sn) + '" style="padding:2px 10px;min-height:0;font-size:13px">复制</button></div><div class="sub">抽取时间：' + esc(v.at) + '</div><div class="sub">有效期至：' + esc(v.exp) + ' · 状态：<b style="white-space:nowrap">' + vState(v) + '</b>' + (v.used ? '（' + esc(v.ut) + '）' : '') + '</div>') + '</div>';
 }
 function actLog(a) {
     const r = (actGet()[a.id] || []).slice().reverse().slice(0, 10);
-    modal('<h2>' + esc(a.t) + ' · 我的凭证</h2><p class="sub">凭证只保存在这台手机上，清理浏览器数据后会消失；本页面无法防伪，兑换以医院工作人员现场核验和登记的流水号为准。</p>' + (r.length ? r.map((v, i) => '<div>' + actVoucherHtml(a, v) + (vState(v) === '待兑换' ? '<div class="row"><button class="ghost" data-vsn="' + esc(v.sn) + '">工作人员核销</button></div>' : '') + '</div>').join('') : '<p class="sub">还没有凭证。</p>') + '<div class="bar"><button class="ghost" data-go="x">关闭</button></div>');
+    modal('<h2>' + esc(a.t) + ' · 我的凭证</h2><p class="sub">凭证只保存在这台手机上，清理浏览器数据后会消失；本页面无法防伪，兑换以医院工作人员现场核验和登记的流水号为准。</p>' + (r.length ? r.map((v, i) => '<div>' + actVoucherHtml(a, v) + (vState(v) === '待兑换' ? '<div class="row"><button class="ghost" data-vsn="' + esc(v.sn) + '">到院核销（工作人员操作）</button></div>' : '') + '</div>').join('') : '<p class="sub">还没有凭证。</p>') + '<div class="bar"><button class="ghost" data-go="x">关闭</button></div>');
     const o = [...document.querySelectorAll('.ov')].pop();
     o.querySelectorAll('[data-vsn]').forEach(bt => bt.onclick = () => actRedeem(a, bt.dataset.vsn, o));
 }
+const RDL = { n: 0, until: 0 };
 function actRedeem(a, sn, parent) {
-    modal('<h2>工作人员核销</h2><p class="sub">请由医院工作人员操作。核销后这张凭证在本机显示为“已兑换”，请同时在医院自己的登记表里记录流水号 <b>' + esc(sn) + '</b>。</p>' + (a.pin ? '<label>核销密码</label><input id="rd_pin" type="password" inputmode="numeric" autocomplete="off">' : '') + '<div class="bar"><button class="ghost" data-go="x">取消</button><button class="btn" id="rd_ok">确认核销</button></div>');
+    const v0 = (actGet()[a.id] || []).find(x => x.sn === sn), prize = v0 ? v0.r : '';
+    modal('<h2>到院核销（工作人员操作）</h2><p class="sub">请把手机交给医院工作人员操作，核销前请勿自行点击。核销后这张凭证在本机显示为“已兑换”，请同时在医院自己的登记表里记录流水号 <b>' + esc(sn) + '</b>。</p><div class="item"><div class="sub">本次核销</div><div style="font-size:20px;font-weight:700">' + esc(prize) + '</div><div class="sub">' + esc(a.t) + ' · 流水号 ' + esc(sn) + ' <button type="button" class="ghost" data-cpsn="' + esc(sn) + '" style="padding:2px 10px;min-height:0;font-size:13px">复制</button></div></div>' + (a.pin ? '<label>核销密码</label><input id="rd_pin" type="password" inputmode="numeric" autocomplete="off">' : '<p class="sub" style="color:#b45309">这个活动没有设置核销密码，请确认现场有工作人员核验后再点“确认核销”。</p>') + '<div class="bar"><button class="ghost" data-go="x">取消</button><button class="btn" id="rd_ok">确认核销</button></div>');
     const o = [...document.querySelectorAll('.ov')].pop();
     o.querySelector('#rd_ok').onclick = () => {
         const pin = o.querySelector('#rd_pin');
-        if (a.pin && (!pin || pin.value !== a.pin)) { alert('核销密码不对'); return; }
+        if (a.pin) {
+            if (!pin) return;
+            const LK = 'companion.rdlock.' + (HP_KEY || 'demo') + '.' + a.id, lk = (() => { try { return JSON.parse(localStorage.getItem(LK) || '{}') || {}; } catch (e) { return {}; } })();
+            const erf = t => { let e = o.querySelector('#rd_err'); if (!e) { e = document.createElement('p'); e.id = 'rd_err'; e.setAttribute('role', 'alert'); e.style.color = '#b3261e'; e.style.fontWeight = '600'; pin.parentNode.insertBefore(e, pin.nextSibling); } e.textContent = t; pin.value = ''; pin.focus(); };
+            if (lk.until && Date.now() < lk.until) { erf('密码输错次数过多，请 ' + Math.ceil((lk.until - Date.now()) / 60000) + ' 分钟后再试'); return; }
+            if (!pin.value) { erf('请输入核销密码'); return; }
+            if (pin.value !== a.pin) { lk.n = (lk.n || 0) + 1; if (lk.n >= 5) { lk.until = Date.now() + 5 * 60000; lk.n = 0; } try { localStorage.setItem(LK, JSON.stringify(lk)); } catch (e) { } erf(lk.until && Date.now() < lk.until ? '密码连续输错 5 次，已暂停 5 分钟' : '核销密码不对，请重新输入（连续输错 5 次会暂停 5 分钟）'); return; }
+            try { localStorage.removeItem(LK); } catch (e) { }
+        }
         const g = actGet(), v = (g[a.id] || []).find(x => x.sn === sn);
         if (v && !v.used) { v.used = 1; v.ut = nowStr(); actSet(g); }
         o.remove(); if (parent) parent.remove();
         const h = document.querySelector('.hosp-act'); if (h) h.outerHTML = actCard();
-        actLog(a);
+        modal('<div style="text-align:center"><div style="font-size:34px;font-weight:800;color:#0f766e">已核销</div><div style="font-size:20px;font-weight:700;margin-top:8px">' + esc(prize) + '</div><div class="sub">流水号 ' + esc(sn) + '<br>' + esc(v ? v.ut : nowStr()) + '</div><p class="sub">请工作人员在医院登记表里记下流水号后，再交付奖品。</p></div><div class="bar"><button class="btn" data-go="x">完成</button></div>');
     };
 }
 const actFx = () => { try { return !matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return true; } };
@@ -2092,21 +2161,23 @@ function actPlay(a) {
     else {
         vis = '<div style="text-align:center;margin:8px 0"><svg id="act_t" viewBox="0 0 120 150" width="120" height="150" aria-label="签筒" style="overflow:visible"><g id="act_st" style="opacity:0"><rect x="45" y="-6" width="8" height="52" rx="3" fill="#d94f3d"/><rect x="45" y="-6" width="8" height="10" rx="3" fill="#fbbf24"/></g><rect x="38" y="20" width="6" height="40" rx="3" fill="#c0794a"/><rect x="52" y="12" width="6" height="48" rx="3" fill="#e8a85a"/><rect x="66" y="22" width="6" height="38" rx="3" fill="#c0794a"/><rect x="80" y="16" width="6" height="44" rx="3" fill="#e8a85a"/><path d="M26 58h68l-6 80a8 8 0 0 1-8 7H40a8 8 0 0 1-8-7z" fill="' + hc + '"/><rect x="26" y="54" width="68" height="10" rx="4" fill="#fff" opacity=".35"/></svg><style>@keyframes actshake{0%,100%{transform:rotate(0)}20%{transform:rotate(-9deg)}40%{transform:rotate(9deg)}60%{transform:rotate(-7deg)}80%{transform:rotate(7deg)}}</style></div>';
     }
-    modal('<h2>' + esc(a.t) + '</h2>' + vis + '<div id="act_r" aria-live="polite" style="text-align:center;min-height:56px"></div><div class="bar"><button class="ghost" data-go="x" id="act_x">关闭</button><button class="btn" id="act_go">' + (a.kind === 'wheel' ? '转一下' : '摇一摇') + '</button></div><p class="sub" style="font-size:13px">服务由医院提供，兑换以医院工作人员现场核验为准；结果不构成对您病情的任何判断。</p>');
+    modal('<h2>' + esc(a.t) + '</h2>' + vis + '<div id="act_r" aria-live="polite" style="text-align:center;min-height:56px"></div><div class="bar"><button class="ghost" data-go="x" id="act_x">关闭</button><button class="btn" id="act_go">' + (a.kind === 'wheel' ? '转一下' : '抽一签') + '</button></div><p class="sub" style="font-size:13px">服务由医院提供，兑换以医院工作人员现场核验为准；结果不构成对您病情的任何判断。</p>');
     let rot = 0;
     const o = [...document.querySelectorAll('.ov')].pop(), go = o.querySelector('#act_go'), out = o.querySelector('#act_r');
     go.onclick = () => {
-        if (actDone(a)) { out.textContent = a.per === 'once' ? '您已参与过本活动' : '今天已经参与过了，明天再来'; go.disabled = true; return; }
+        if (actDone(a)) { out.textContent = actWin(a) || (a.per === 'once' ? '您已参与过本活动' : '今天已经参与过了，明天再来'); go.disabled = true; return; }
+        if (a.need && a.per !== 'free' && chkAvail() < a.need) { out.textContent = '还差 ' + (a.need - chkAvail()) + ' 次整理打卡：到「就诊流程清单」完成一个流程即可，每天最多 1 次。'; return; }
         go.disabled = true;
         const idx = actPick(a.items), item = a.items[idx], fin = () => {
+            if (a.need && a.per !== 'free' && !item.n) { const c = chkGet(); c.u = Math.min(c.n, c.u + a.need); chkSet(c); }
             if (a.per === 'free') { out.innerHTML = '<div style="font-size:20px;font-weight:700">' + esc(item.t) + '</div><div class="sub">' + esc(item.d) + '</div>'; go.textContent = '再来一次'; go.disabled = false; return; }
             const g = actGet(), r = g[a.id] = g[a.id] || [], v = { sn: rnd(2176782336).toString(36).toUpperCase().padStart(6, '0'), d: today(), at: nowStr(), r: item.t, g: item.g, desc: (item.q ? item.q + '。' : '') + item.d, n: item.n ? 1 : 0, exp: item.n ? '' : dstr(a.valid), used: 0, ut: '' };
             r.push(v); if (r.length > 30) r.splice(0, r.length - 30); actSet(g);
             out.innerHTML = '<div style="font-size:20px;font-weight:700">结果：' + esc(item.t) + '</div>' + actVoucherHtml(a, v);
-            go.textContent = '已参与'; go.disabled = true;
+            go.textContent = '已完成'; go.disabled = true;
             if (!item.n) { actBurst(o, ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#a855f7', '#fbbf24']); if (out.animate && actFx()) out.animate([{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.06)', opacity: 1, offset: .6 }, { transform: 'scale(1)', opacity: 1 }], { duration: 520, easing: 'ease-out' }); }
-            if (!item.n) { out.insertAdjacentHTML('beforeend', '<p class="sub" style="margin:10px 0 4px"><b>接下来您可以：</b></p><div class="row" style="flex-wrap:wrap"><button class="ghost" id="ch1">仅使用基础功能</button><button class="ghost" id="ch2">了解完整VIP权益</button><button class="ghost" id="ch3">后续优惠和礼品</button></div>');
-                out.querySelector('#ch1').onclick = () => o.remove();
+            if (!item.n) { out.insertAdjacentHTML('beforeend', '<p style="margin:10px 0 4px;color:#0f766e"><b>如何领取：</b>到院向工作人员出示这张凭证，并报流水号 ' + esc(v.sn) + '。</p><p class="sub" style="margin:6px 0 4px">接下来您可以：</p><div class="row" style="flex-wrap:wrap"><button class="ghost" id="ch1">查看我的凭证</button><button class="ghost" id="ch2">VIP 权益说明</button><button class="ghost" id="ch3">后续优惠和礼品</button></div>');
+                out.querySelector('#ch1').onclick = () => { o.remove(); actLog(a); };
                 out.querySelector('#ch2').onclick = () => { const H = HP || HOSP.demo; modal('<h2>完整VIP权益</h2><p class="sub">具体权益、办理方式和费用以' + esc(HP ? HP.n : '示例医院') + '前台或服务电话公布为准' + (typeof H.tel === 'string' && H.tel ? '：' + esc(H.tel) : '') + '。本工具不收款、不办理会员。</p><div class="bar"><button class="ghost" data-go="x">关闭</button></div>'); };
                 out.querySelector('#ch3').onclick = () => { modal('<h2>后续优惠和礼品</h2><p class="sub">后续活动、优先参与资格和礼品由医院另行通知和发放，到院时请向工作人员询问。您抽到的凭证可在“我的凭证”里随时查看。</p><div class="bar"><button class="ghost" data-go="x">关闭</button></div>'); };
             }
@@ -2119,7 +2190,7 @@ function actPlay(a) {
             setTimeout(fin, 4100);
         }
         else {
-            const t = o.querySelector('#act_t'); t.style.transformOrigin = '50% 100%'; t.style.animation = 'actshake .9s ease-in-out 2'; out.textContent = '摇动中…'; setTimeout(() => { t.style.animation = ''; const st = o.querySelector('#act_st'); if (st && st.animate && actFx()) { st.style.opacity = 1; st.animate([{ transform: 'translateY(22px)', opacity: 0 }, { transform: 'translateY(-20px)', opacity: 1 }], { duration: 500, fill: 'forwards', easing: 'ease-out' }); setTimeout(fin, 650); } else fin(); }, 1900);
+            const t = o.querySelector('#act_t'); t.style.transformOrigin = '50% 100%'; t.style.animation = 'actshake .9s ease-in-out 2'; out.textContent = '抽签中…'; setTimeout(() => { t.style.animation = ''; const st = o.querySelector('#act_st'); if (st && st.animate && actFx()) { st.style.opacity = 1; st.animate([{ transform: 'translateY(22px)', opacity: 0 }, { transform: 'translateY(-20px)', opacity: 1 }], { duration: 500, fill: 'forwards', easing: 'ease-out' }); setTimeout(fin, 650); } else fin(); }, 1900);
         }
     };
 }
@@ -2173,7 +2244,7 @@ catch (e) {
     storeFail();
 } };
 const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map(x => x.toString(16).padStart(2, '0')).join('');
-const privacy = () => modal('<h2>隐私说明</h2><p>你在这里录入的内容，只保存在这台设备的浏览器里，页面本身不会把它上传到服务器。</p><p>会保存的内容：档案信息、时间线记录、指标数值和你上传的图片。</p><p>清理浏览器数据、使用无痕模式或更换设备，都会丢失这些资料，请定期在「数据备份」里导出。</p><p><b>资料存在本机不等于已加密。</b>别人能打开你的手机或浏览器，就可能看到这些内容；备份文件默认也未加密（导出时可设密码），请勿放在公共设备或不可信的共享空间。</p><p>儿童档案请由监护人填写。</p><p class="sub">本工具仅作病程资料归档，不能替代医生面诊。</p><div class="bar"><button class="btn" data-go="x">我知道了</button></div>');
+const privacy = () => modal('<h2>隐私说明</h2><p>你录入的内容只保存在这台设备的浏览器里，页面不会上传到服务器。</p><p>清理浏览器数据或更换设备会丢失资料，请定期在「数据备份」里导出。</p><p>本地保存不等于加密，请勿在公共设备使用。</p><details><summary>展开更多说明</summary><p>会保存的内容：档案信息、时间线记录、指标数值和你上传的图片。</p><p>清理浏览器数据、使用无痕模式或更换设备，都会丢失这些资料，请定期在「数据备份」里导出。</p><p><b>资料存在本机不等于已加密。</b>别人能打开你的手机或浏览器，就可能看到这些内容；备份文件默认也未加密（导出时可设密码），请勿放在公共设备或不可信的共享空间。</p><p>儿童档案请由监护人填写。</p><p class="sub">本工具仅作病程资料归档，不能替代医生面诊。</p></details><div class="bar"><button class="btn" data-go="x">我知道了</button></div>');
 function acctInit() {
     try {
         if (navigator.storage && navigator.storage.persist)
@@ -2272,6 +2343,9 @@ app.addEventListener('click', e => {
         S.q = '';
         S.kf = '';
         S.edit = null;
+    }
+    else if (act === 'qadd') {
+        S.cur = b.dataset.id; S.view = 'list'; S.tab = 'tl'; S.addOpen = true; S.q = ''; S.kf = ''; S.edit = null;
     }
     else if (act === 'new') {
         S.view = 'new';
@@ -2422,6 +2496,30 @@ load();
 if (S.profiles.length)
     S.view = 'home';
 view();
+/* 复制流水号：优先用剪贴板接口，不行就用选中文字的老办法；都不行时提示手动复制 */
+document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-cpsn]'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const t = b.getAttribute('data-cpsn') || '', ok = () => { b.textContent = '已复制'; setTimeout(() => { b.textContent = '复制'; }, 1500); }, no = () => { b.textContent = '请长按流水号手动复制'; };
+    const old = () => { try { const x = document.createElement('textarea'); x.value = t; x.setAttribute('readonly', ''); x.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.appendChild(x); x.select(); x.setSelectionRange(0, t.length); const g = document.execCommand('copy'); x.remove(); g ? ok() : no(); } catch (er) { no(); } };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, old); else old(); } catch (er) { old(); }
+}, true);
+/* 离线缓存：同目录有 sw.js 时注册，重复访问更快，断网也能打开；注册失败不影响使用 */
+try { if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => { }); } catch (e) { }
+/* 启动页：医院配置了 splash 时，每台设备每个版本只显示一次；点一下或 2.5 秒后自动关闭；存储不可用时不显示，绝不挡住使用 */
+(function () { try {
+    if (!HP || !HP.splash || !HP_KEY || HP_KEY === 'preview') return;
+    const k = 'companion.splash.' + HP_KEY, v = String(HP.ver || '1');
+    if (localStorage.getItem(k) === v) return;
+    localStorage.setItem(k, v);
+    const d = document.createElement('div');
+    d.setAttribute('role', 'presentation');
+    d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:' + (HP.c || '#0f5c55') + ';color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;transition:opacity .4s';
+    d.innerHTML = (HP.l ? '<img alt="" style="width:72px;height:72px;object-fit:contain;background:#fff;border-radius:16px;padding:6px;margin-bottom:16px" src="' + esc(HP.l) + '">' : '') + '<div style="font-size:22px;font-weight:700">' + esc(HP.n) + '</div><div style="margin-top:10px;font-size:15px;opacity:.92">' + esc(HP.splash) + '</div>';
+    const off = () => { if (!d.parentNode) return; d.style.opacity = '0'; setTimeout(() => d.remove(), 400); };
+    d.onclick = off; document.body.appendChild(d); setTimeout(off, 2500);
+} catch (e) { } })();
+
 if (CFG_ERR) { }
 else if (INAPP)
     inAppModal();
